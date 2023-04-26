@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Media;
 
 namespace pong
 {
@@ -32,10 +33,11 @@ namespace pong
       new int[]{  6,7,2},
           };
 
+        int[][] CDL = new int[][]{ };
 
         //A stopwatch to do things at certain intervals.
         Stopwatch stopwatch = new Stopwatch();
-        
+
         //Amount of time between each stopwatch update
         int decreaseSpeedsInterval = 20;
         int updatePositionInterval = 4;
@@ -47,6 +49,10 @@ namespace pong
         SolidBrush whiteBrush = new SolidBrush(Color.White);
         Pen whitePen = new Pen(Color.White, 5);
 
+        //SOUNDS
+        SoundPlayer gameEnd = new SoundPlayer(pong.Properties.Resources.PuckHit2);
+        SoundPlayer resetPositions = new SoundPlayer(pong.Properties.Resources.PuckHit);
+        SoundPlayer puckHit = new SoundPlayer(pong.Properties.Resources.PuckHit4);
 
         //GAME OBJECTS
         Rectangle[] movingObjects = new Rectangle[] { };
@@ -65,10 +71,12 @@ namespace pong
         double[] objectSpeedsXY;
 
         //Variables to know if the player can go any further towards the puck
-        int[] canMoveUp = new int[] { 0, 0, 0 };
-        int[] canMoveDown = new int[] { 0, 0, 0 };
-        int[] canMoveLeft = new int[] { 0, 0, 0 };
-        int[] canMoveRight = new int[] { 0, 0, 0 };
+        int[][] canMoveUpDownLeftRight = new int[][]
+        {
+           new int[]{ 0, 0, 0, 0 },
+           new int[]{ 0, 0, 0, 0 },
+           new int[]{ 0, 0, 0, 0 }
+        };
 
         //TRACKING INFORMATION ON ONLY THE TWO PADDLES:
         Point[] previousLocations = new Point[] { new Point(10, 10), new Point(10, 10) };
@@ -81,15 +89,29 @@ namespace pong
         public Form1()
         {
             InitializeComponent();
+
             //Begin the stopwatch which does things in different intervals.
             stopwatch.Start();
-            
+
             //Declare score zones based on screen dimensions.
             ScoreZones = new Rectangle[] //0 = TopZone(player2Score) 1 = BottomZone(player1Score)
           {
           new Rectangle(this.Width / 2 - scoreZoneWidth / 2, this.Top , scoreZoneWidth, scoreZoneHeight),
           new Rectangle(this.Width / 2 - scoreZoneWidth / 2, this.Bottom - scoreZoneHeight, scoreZoneWidth, scoreZoneHeight)
           };
+
+            //COLISION DETAILS LIST: Each row is a new type of colision check,
+            //#0 and #1: is this measuring the X or Y axis? 0 = dont count this axis, 1 = do count this axis.
+            //#2: is this less than or greater than? 1 = less than, -1 = greater than.
+            //#3: what is the axis greater or less than?
+            CDL = new int[][]
+            {
+                new int[]{0, 1, 1, 0},
+                new int[]{0, 1, -1, this.Height},
+                new int[]{1, 0, 1, 0},
+                new int[]{1, 0, -1, this.Width},
+            };
+
 
             //Set all positions for paddles and balls based on screen dimensions.
             ResetPositions();
@@ -116,7 +138,7 @@ namespace pong
                 }
             }
 
-                for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 2; i++)
             {
 
                 //update the objects previous locations
@@ -125,8 +147,12 @@ namespace pong
                 //Check to see if a goal has been scored.
                 if (movingObjects[0].IntersectsWith(ScoreZones[i]))
                 {
+
+                    resetPositions.Play();
+                    Refresh();
+
                     playerScores[i]++;
-                    
+
                     //Has the player won the game?
                     if (playerScores[i] >= winScoreAmount)
                     {
@@ -135,6 +161,8 @@ namespace pong
                         gameTimer.Enabled = false;
                         resetButton.Enabled = true;
                         resetButton.Visible = true;
+                        gameEnd.Play();
+                        Refresh();
                     }
                     //If someone has scored a goal reset game object positions.
                     ResetPositions();
@@ -152,42 +180,78 @@ namespace pong
             //COLISIONS! 
             for (int i = 0; i <= 2; i++)
             {
-                //IF ANY OBJECTS ARE HITTING THE WALLS; PUSH THEM BACK
-                //TOP WALL
-                if (movingObjects[i].Y <= 0)
+                #region Revised Wall Check Code
+                for (int j = 0; j <= 3; j++)
                 {
-                    if (i == 0)
-                    {
-                        objectDirectionsXY[0 + 3] *= -1;
-                    }
-                    canMoveUp[i] = -1;
-                    movingObjects[i].Y = 0 + 1;
-                }
-                //BOTTOM WALL
-                if (movingObjects[i].Y >= this.Height - movingObjects[i].Height)
-                {
-                    if (i == 0) { objectDirectionsXY[0 + 3] *= -1;
-                     }
-                    canMoveDown[0] = 1;
-                    movingObjects[i].Y = this.Height - movingObjects[i].Height - 1;
-                }
-                //LEFT WALL
-                if (movingObjects[i].X < 0)
-                {
-                    if (i == 0) { objectDirectionsXY[0] *= -1;
-                    }
-                    canMoveLeft[i] = -1;
-                    movingObjects[i].X = 0 + 1;
-                 }
-                //RIGHT WALL
-                if (movingObjects[i].X > this.Width - movingObjects[i].Width)
-                {
-                    if (i == 0) { objectDirectionsXY[0] *= -1;
-                    }
+                    //if the equation includes an objects height
+                    int includedHeight = (movingObjects[i].Width * ((CDL[j][2] - 1) * -1 / 2));
 
-                    canMoveRight[i] = 1;
-                    movingObjects[i].X = this.Width - movingObjects[i].Width - 1;
+                    //First check if the moving objects X/Y is <= or >= the specified amount. 
+                    if (((movingObjects[i].X * CDL[j][0]) + (movingObjects[i].Y * CDL[j][1])) * CDL[j][2] <= (CDL[j][3] - includedHeight) * CDL[j][2])
+                    {
+                        //variable for if the interaction affects the y axis.
+                        int yDifference = 3 * CDL[j][1];
+                        //If so and the object is the puck, change the direction the puck travels on the axis; if the puck hits the top/bottom wall multiply the Y direction by -1.
+                        if (i == 0)
+                        {
+                            objectDirectionsXY[0 + yDifference] *= -1;
+                            canMoveUpDownLeftRight[0][j] = CDL[j][2] * -1;
+                        }
+                        //Affect either the X or Y coordinates of the rectangle, and set them away from the wall they ran into.
+                        if (CDL[j][0] == 1)
+                        {
+                            movingObjects[i].X = CDL[j][3] - includedHeight + (Convert.ToInt32(objectSpeedsXY[i] * CDL[j][2]));
+                        }
+                        else
+                        {
+                            movingObjects[i].Y = CDL[j][3] - includedHeight + (Convert.ToInt32(objectSpeedsXY[i + yDifference] * CDL[j][2]));
+                        }
+                    }
                 }
+                #endregion
+                #region First Wall Check Code
+                ////IF ANY OBJECTS ARE HITTING THE WALLS; PUSH THEM BACK
+                ////TOP WALL
+                //if (movingObjects[i].Y <= 0)
+                //{
+                //    if (i == 0)
+                //    {
+                //        objectDirectionsXY[0 + 3] *= -1;
+                //        canMoveUpDownLeftRight[0][0] = -1;
+                //    }
+                //    movingObjects[i].Y = 0 + Convert.ToInt32(objectSpeedsXY[i + 3]);
+                //}
+                ////BOTTOM WALL
+                //if (movingObjects[i].Y * -1 <= (this.Height - movingObjects[i].Height) * -1)
+                //{
+                //    if (i == 0)
+                //    {
+                //        objectDirectionsXY[0 + 3] *= -1;
+                //        canMoveUpDownLeftRight[0][1] = 1;
+                //    }
+                //    movingObjects[i].Y = this.Height - movingObjects[i].Height - Convert.ToInt32(objectSpeedsXY[i + 3]);
+                //}
+                ////LEFT WALL
+                //if (movingObjects[i].X <= 0)
+                //{
+                //    if (i == 0)
+                //    {
+                //        objectDirectionsXY[0] *= -1;
+                //        canMoveUpDownLeftRight[0][2] = -1;
+                //    }
+                //    movingObjects[i].X = 0 + Convert.ToInt32(objectSpeedsXY[i]);
+                //}
+                //RIGHT WALL
+                //if (movingObjects[i].X * -1 <= (this.Width - movingObjects[i].Width) * -1)
+                //{
+                //    if (i == 0)
+                //    {
+                //        objectDirectionsXY[0] *= -1;
+                //        canMoveUpDownLeftRight[0][3] = 1;
+                //    }
+                //    movingObjects[i].X = this.Width - movingObjects[i].Width - Convert.ToInt32(objectSpeedsXY[i]);
+                //}
+                #endregion
 
                 //OBJECTS INTERACTING WITH EACHOTHER; I wont use .Intersects with because these are circles;
                 //--instead I want to compare the position of the ball and the other circles by drawing a line between each circle and
@@ -198,8 +262,8 @@ namespace pong
                     if (movingObjects[0].X > movingObjects[i].X + movingObjects[0].Width)
                     {
                         objectDirectionsXY[0] = 1;
-                        canMoveLeft[0] = -1;
-                        canMoveRight[i] = canMoveRight[0];
+                        canMoveUpDownLeftRight[0][2] = -1;
+                        canMoveUpDownLeftRight[i][3] = canMoveUpDownLeftRight[0][3];
 
                         movingObjects[i].X += -2;
                     }
@@ -208,8 +272,8 @@ namespace pong
                     if (movingObjects[0].X < movingObjects[i].X)
                     {
                         objectDirectionsXY[0] = -1;
-                        canMoveRight[0] = 1;
-                        canMoveLeft[i] = canMoveLeft[0];
+                        canMoveUpDownLeftRight[0][3] = 1;
+                        canMoveUpDownLeftRight[i][2] = canMoveUpDownLeftRight[0][2];
 
                         movingObjects[i].X += 2;
                     }
@@ -218,8 +282,8 @@ namespace pong
                     if (movingObjects[0].Y > movingObjects[i].Y + movingObjects[0].Width)
                     {
                         objectDirectionsXY[0 + 3] = 1;
-                        canMoveUp[0] = -1;
-                        canMoveDown[i] = canMoveDown[0];
+                        canMoveUpDownLeftRight[0][0] = -1;
+                        canMoveUpDownLeftRight[i][1] = canMoveUpDownLeftRight[0][1];
 
                         movingObjects[i].Y += -2;
                     }
@@ -228,35 +292,35 @@ namespace pong
                     if (movingObjects[0].Y < movingObjects[i].Y)
                     {
                         objectDirectionsXY[0 + 3] = -1;
-                        canMoveDown[0] = 1;
-                        canMoveUp[i] = canMoveUp[0];
+                        canMoveUpDownLeftRight[0][1] = 1;
+                        canMoveUpDownLeftRight[i][0] = canMoveUpDownLeftRight[0][0];
 
                         movingObjects[i].Y += 2;
                     }
-
-
+                    //Play a sound of the puck being hit
+                    puckHit.Play();
+                    Refresh();
 
                     //Apply the velocity of the paddle to the puck when they intersect.
                     objectSpeedsXY[0] = objectSpeedsXY[0] / 2 + paddleVelocitiesXY[i - 1];
                     objectSpeedsXY[0 + 3] = objectSpeedsXY[0 + 3] / 2 + paddleVelocitiesXY[i + 2 - 1];
-                    //If the object should not move because the puck is stuck; bounce the object back.
-                    }
+                }
                 //UPDATE OBJECT POSITIONS
-                if (objectDirectionsXY[i] != canMoveRight[i] && objectDirectionsXY[i] != canMoveLeft[i])
+                if (objectDirectionsXY[i] != canMoveUpDownLeftRight[i][3] && objectDirectionsXY[i] != canMoveUpDownLeftRight[i][2])
                 {
                     movingObjects[i].X += Convert.ToInt32(objectDirectionsXY[i] * objectSpeedsXY[i]);
                 }
-                if (objectDirectionsXY[i + 3] != canMoveUp[i] && objectDirectionsXY[i + 3] != canMoveDown[i])
+                if (objectDirectionsXY[i + 3] != canMoveUpDownLeftRight[i][0] && objectDirectionsXY[i + 3] != canMoveUpDownLeftRight[i][1])
                 {
                     movingObjects[i].Y += Convert.ToInt32(objectDirectionsXY[i + 3] * objectSpeedsXY[i + 3]);
                 }
 
-                if (GetLength(movingObjects[0], movingObjects[i]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[i].Width / 2)) || ( i == 0 && GetLength(movingObjects[0], movingObjects[1]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[1].Width / 2)) && GetLength(movingObjects[0], movingObjects[2]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[2].Width / 2))))
+                if (GetLength(movingObjects[0], movingObjects[i]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[i].Width / 2)) || (i == 0 && GetLength(movingObjects[0], movingObjects[1]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[1].Width / 2)) && GetLength(movingObjects[0], movingObjects[2]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[2].Width / 2))))
                 {
-                    canMoveUp[i] = 0;
-                    canMoveDown[i] = 0;
-                    canMoveLeft[i] = 0;
-                    canMoveRight[i] = 0;
+                    canMoveUpDownLeftRight[i][0] = 0;
+                    canMoveUpDownLeftRight[i][1] = 0;
+                    canMoveUpDownLeftRight[i][2] = 0;
+                    canMoveUpDownLeftRight[i][3] = 0;
                 }
 
             }
