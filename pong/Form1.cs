@@ -33,7 +33,8 @@ namespace pong
       new int[]{  6,7,2},
           };
 
-        int[][] CDL = new int[][]{ };
+        int[][] CDL = new int[][] { };
+        int colisionListDifference = 4;
 
         //A stopwatch to do things at certain intervals.
         Stopwatch stopwatch = new Stopwatch();
@@ -104,13 +105,16 @@ namespace pong
             //#0 and #1: is this measuring the X or Y axis? 0 = dont count this axis, 1 = do count this axis.
             //#2: is this less than or greater than? 1 = less than, -1 = greater than.
             //#3: what is the axis greater or less than?
-            CDL = new int[][]
-            {
-                new int[]{0, 1, 1, 0},
-                new int[]{0, 1, -1, this.Height},
-                new int[]{1, 0, 1, 0},
-                new int[]{1, 0, -1, this.Width},
-            };
+            CDL = new int[][] {
+                     new int[]{0, 1, 1, 0},
+                     new int[]{0, 1,-1, this.Height},
+                     new int[]{1, 0, 1, 0},
+                     new int[]{1, 0,-1, this.Width},
+                     new int[]{0, 1, 1, 0, 1},
+                     new int[]{0, 1,-1, 0, 0},
+                     new int[]{1, 0, 1, 0, 3},
+                     new int[]{1, 0,-1, 0, 2},
+                    };
 
 
             //Set all positions for paddles and balls based on screen dimensions.
@@ -172,9 +176,18 @@ namespace pong
             //Determening all player directions depending on what keys are pressed: (for example: if 'Up' is down, and 'Down' is not, player2's vertical direction is -1, reverse those to get 1, and if both/neither are down, get a direction of 0.)
             for (int i = 0; i < determineDirectionsList.Length; i++)
             {
-                if (WSADUpDownLeftRight[determineDirectionsList[i][0]] == true && WSADUpDownLeftRight[determineDirectionsList[i][1]] == false) { objectDirectionsXY[determineDirectionsList[i][2]] = -1; }
-                else if (WSADUpDownLeftRight[determineDirectionsList[i][1]] == true && WSADUpDownLeftRight[determineDirectionsList[i][0]] == false) { objectDirectionsXY[determineDirectionsList[i][2]] = 1; }
-                else { objectDirectionsXY[determineDirectionsList[i][2]] = 0; }
+                if (WSADUpDownLeftRight[determineDirectionsList[i][0]] == true && WSADUpDownLeftRight[determineDirectionsList[i][1]] == false)
+                {
+                    objectDirectionsXY[determineDirectionsList[i][2]] = -1;
+                }
+                else if (WSADUpDownLeftRight[determineDirectionsList[i][1]] == true && WSADUpDownLeftRight[determineDirectionsList[i][0]] == false)
+                {
+                    objectDirectionsXY[determineDirectionsList[i][2]] = 1;
+                }
+                else
+                {
+                    objectDirectionsXY[determineDirectionsList[i][2]] = 0;
+                }
             }
 
             //COLISIONS! 
@@ -258,8 +271,45 @@ namespace pong
                 //--looking at if it is smaller than the sum of their radius's. Math.Sprt((x1-x2)^2 + (y1-y2)^2) <= r1+r2
                 if (i != 0 && GetLength(movingObjects[0], movingObjects[i]) <= Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[i].Width / 2)))
                 {
+                    #region Revised Paddle Check Code
+                    //for (int j = colisionListDifference; j <= 3 + colisionListDifference; j++)
+                    //{
+                    //    //if the equation includes an objects height
+                    //    int includedHeight = (movingObjects[0].Width * ((CDL[j][2] - 1) * -1 / 2));
+
+                    //    //First check if the moving objects X/Y is <= or >= the specified amount. 
+                    //    if (((movingObjects[0].X * CDL[j][0]) + (movingObjects[0].Y * CDL[j][1])) * CDL[j][2] <= (((movingObjects[i].X * CDL[j][0]) + (movingObjects[i].Y * CDL[j][1])) + includedHeight) * CDL[j][2])
+                    //    {
+                    //        //variable for if the interaction affects the y axis.
+                    //        int yDifference = 3 * CDL[j][1];
+
+                    //        objectDirectionsXY[0 + yDifference] = CDL[j][2] * -1;
+
+                    //        canMoveUpDownLeftRight[0][CDL[j][4]] = CDL[j][2];
+                    //        canMoveUpDownLeftRight[i][j - colisionListDifference] = canMoveUpDownLeftRight[0][j - colisionListDifference];
+
+                    //        //Affect either the X or Y coordinates of the rectangle, and set them away from the wall they ran into.
+                    //        if (CDL[j][0] == 1)
+                    //        {
+                    //            movingObjects[i].X += 2 * CDL[j][2];
+                    //        }
+                    //        else
+                    //        {
+                    //            movingObjects[i].Y += 2 * CDL[j][2];
+                    //        }
+
+
+                    //    }
+
+                    //    //Apply the velocity of the paddle to the puck when they intersect.
+                    //    objectSpeedsXY[0] = objectSpeedsXY[0] / 2 + paddleVelocitiesXY[i - 1];
+                    //    objectSpeedsXY[0 + 3] = objectSpeedsXY[0 + 3] / 2 + paddleVelocitiesXY[i + 2 - 1];
+
+                    //}
+                    #endregion
+                    #region First Paddle Check Code
                     //Puck Right of paddle
-                    if (movingObjects[0].X > movingObjects[i].X + movingObjects[0].Width)
+                    if (movingObjects[0].X * -1 <= (movingObjects[i].X + movingObjects[0].Width) * -1)
                     {
                         objectDirectionsXY[0] = 1;
                         canMoveUpDownLeftRight[0][2] = -1;
@@ -269,7 +319,7 @@ namespace pong
                     }
 
                     //Puck Left of paddle
-                    if (movingObjects[0].X < movingObjects[i].X)
+                    if (movingObjects[0].X <= movingObjects[i].X)
                     {
                         objectDirectionsXY[0] = -1;
                         canMoveUpDownLeftRight[0][3] = 1;
@@ -279,7 +329,7 @@ namespace pong
                     }
 
                     //Puck Below paddle
-                    if (movingObjects[0].Y > movingObjects[i].Y + movingObjects[0].Width)
+                    if (movingObjects[0].Y * -1 <= (movingObjects[i].Y + movingObjects[0].Width) * -1)
                     {
                         objectDirectionsXY[0 + 3] = 1;
                         canMoveUpDownLeftRight[0][0] = -1;
@@ -289,7 +339,7 @@ namespace pong
                     }
 
                     //Puck Above paddle
-                    if (movingObjects[0].Y < movingObjects[i].Y)
+                    if (movingObjects[0].Y <= movingObjects[i].Y)
                     {
                         objectDirectionsXY[0 + 3] = -1;
                         canMoveUpDownLeftRight[0][1] = 1;
@@ -297,14 +347,18 @@ namespace pong
 
                         movingObjects[i].Y += 2;
                     }
-                    //Play a sound of the puck being hit
-                    puckHit.Play();
-                    Refresh();
+
 
                     //Apply the velocity of the paddle to the puck when they intersect.
                     objectSpeedsXY[0] = objectSpeedsXY[0] / 2 + paddleVelocitiesXY[i - 1];
                     objectSpeedsXY[0 + 3] = objectSpeedsXY[0 + 3] / 2 + paddleVelocitiesXY[i + 2 - 1];
+                    #endregion
                 }
+
+                //Play a sound of the puck being hit
+                puckHit.Play();
+                Refresh();
+
                 //UPDATE OBJECT POSITIONS
                 if (objectDirectionsXY[i] != canMoveUpDownLeftRight[i][3] && objectDirectionsXY[i] != canMoveUpDownLeftRight[i][2])
                 {
@@ -322,93 +376,91 @@ namespace pong
                     canMoveUpDownLeftRight[i][2] = 0;
                     canMoveUpDownLeftRight[i][3] = 0;
                 }
-
             }
 
+            
+        Refresh();
+    }
+
+    private void Form1_Paint(object sender, PaintEventArgs e)
+    {
+        e.Graphics.FillRectangle(redBrush, ScoreZones[0]);
+        e.Graphics.FillRectangle(blueBrush, ScoreZones[1]);
+        e.Graphics.FillEllipse(redBrush, movingObjects[1]);
+        e.Graphics.FillEllipse(blueBrush, movingObjects[2]);
+        e.Graphics.FillEllipse(whiteBrush, movingObjects[0]);
+    }
+
+    private void Form1_KeyDown(object sender, KeyEventArgs e)
+    {
+        checkKey(true, e);
+    }
+
+    private void Form1_KeyUp(object sender, KeyEventArgs e)
+    {
+        checkKey(false, e);
+    }
 
 
-            Refresh();
-        }
+    double GetLength(Rectangle rectangle1, Rectangle rectangle2)
+    {
 
-        private void Form1_Paint(object sender, PaintEventArgs e)
+        double x1 = rectangle1.X + (rectangle1.Width / 2);
+        double x2 = rectangle2.X + (rectangle2.Width / 2);
+        double y1 = rectangle1.Y + (rectangle1.Height / 2);
+        double y2 = rectangle2.Y + (rectangle2.Height / 2);
+
+        //A^2 = B^2 + C^2
+        double length = Math.Sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
+        return length;
+    }
+    void checkKey(bool trueOrFalse, KeyEventArgs e)
+    {
+        for (int i = 0; i < keysToCheck.Length; i++)
         {
-            e.Graphics.FillRectangle(redBrush, ScoreZones[0]);
-            e.Graphics.FillRectangle(blueBrush, ScoreZones[1]);
-            e.Graphics.FillEllipse(redBrush, movingObjects[1]);
-            e.Graphics.FillEllipse(blueBrush, movingObjects[2]);
-            e.Graphics.FillEllipse(whiteBrush, movingObjects[0]);
-        }
-
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
-        {
-            checkKey(true, e);
-        }
-
-        private void Form1_KeyUp(object sender, KeyEventArgs e)
-        {
-            checkKey(false, e);
-        }
-
-
-        double GetLength(Rectangle rectangle1, Rectangle rectangle2)
-        {
-
-            double x1 = rectangle1.X + (rectangle1.Width / 2);
-            double x2 = rectangle2.X + (rectangle2.Width / 2);
-            double y1 = rectangle1.Y + (rectangle1.Height / 2);
-            double y2 = rectangle2.Y + (rectangle2.Height / 2);
-
-            //A^2 = B^2 + C^2
-            double length = Math.Sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
-            return length;
-        }
-        void checkKey(bool trueOrFalse, KeyEventArgs e)
-        {
-            for (int i = 0; i < keysToCheck.Length; i++)
+            if (e.KeyCode == keysToCheck[i])
             {
-                if (e.KeyCode == keysToCheck[i])
-                {
-                    WSADUpDownLeftRight[i] = trueOrFalse;
-                }
+                WSADUpDownLeftRight[i] = trueOrFalse;
             }
         }
+    }
 
-        void ResetPositions()
-        {
-            movingObjects = new Rectangle[] //0 = ball, 1 = player1, 2 = player2
-           {
+    void ResetPositions()
+    {
+        movingObjects = new Rectangle[] //0 = ball, 1 = player1, 2 = player2
+       {
               new Rectangle(this.Width / 2 - diskWidth / 2, this.Height / 2 - diskWidth, diskWidth, diskWidth),
               new Rectangle(this.Width / 2 - paddleWidth / 2, this.Top, paddleWidth, paddleWidth),
               new Rectangle(this.Width / 2 - paddleWidth / 2, this.Bottom - paddleWidth, paddleWidth, paddleWidth)
-        };
-            paddleVelocitiesXY = new double[] { 0, 0, 0, 0 };
-            //TRACKING OBJECT INFORMATION: 0 = BALL 1 = PLAYER1 2 = PLAYER2
-            objectDirectionsXY = new int[] { -1, 0, 0, -1, 0, 0 };
-            objectSpeedsXY = new double[] { 0, 7, 7, 0, 7, 7 };
-            updateScores();
-        }
-
-        void updateScores()
-        {
-            player1ScoreLabel.Text = $"PLAYER 1: {playerScores[0]}";
-            player2ScoreLabel.Text = $"PLAYER 1: {playerScores[1]}";
-        }
-        private void button1_Click(object sender, EventArgs e)
-        {
-            playerScores = new int[] { 0, 0 };
-            resetButton.Enabled = false;
-            resetButton.Visible = false;
-            winLabel.Text = "";
-            gameTimer.Enabled = true;
-            updateScores();
-        }
-
-        bool WatchIntervalIs(int interval)
-        {
-            bool trueOrFalse = false;
-            if (stopwatch.ElapsedMilliseconds % interval == 0) { trueOrFalse = true; }
-            return trueOrFalse;
-        }
-
+    };
+        paddleVelocitiesXY = new double[] { 0, 0, 0, 0 };
+        //TRACKING OBJECT INFORMATION: 0 = BALL 1 = PLAYER1 2 = PLAYER2
+        objectDirectionsXY = new int[] { -1, 0, 0, -1, 0, 0 };
+        objectSpeedsXY = new double[] { 0, 7, 7, 0, 7, 7 };
+        updateScores();
     }
+
+    void updateScores()
+    {
+        player1ScoreLabel.Text = $"PLAYER 1: {playerScores[0]}";
+        player2ScoreLabel.Text = $"PLAYER 1: {playerScores[1]}";
+    }
+    private void button1_Click(object sender, EventArgs e)
+    {
+        playerScores = new int[] { 0, 0 };
+        resetButton.Enabled = false;
+        resetButton.Visible = false;
+        winLabel.Text = "";
+        gameTimer.Enabled = true;
+        updateScores();
+    }
+
+    bool WatchIntervalIs(int interval)
+    {
+        bool trueOrFalse = false;
+        if (stopwatch.ElapsedMilliseconds % interval == 0) { trueOrFalse = true; }
+        return trueOrFalse;
+    }
+
+}
 }
