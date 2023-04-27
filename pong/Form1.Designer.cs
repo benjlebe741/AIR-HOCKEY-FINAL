@@ -48,9 +48,9 @@
             this.winLabel.BackColor = System.Drawing.Color.Transparent;
             this.winLabel.Font = new System.Drawing.Font("Microsoft YaHei UI", 12F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.winLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.winLabel.Location = new System.Drawing.Point(17, 393);
+            this.winLabel.Location = new System.Drawing.Point(17, 433);
             this.winLabel.Name = "winLabel";
-            this.winLabel.Size = new System.Drawing.Size(425, 119);
+            this.winLabel.Size = new System.Drawing.Size(425, 79);
             this.winLabel.TabIndex = 2;
             this.winLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
@@ -58,7 +58,7 @@
             // 
             this.player2ScoreLabel.BackColor = System.Drawing.Color.Transparent;
             this.player2ScoreLabel.Font = new System.Drawing.Font("Microsoft YaHei UI", 12F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.player2ScoreLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(192)))));
+            this.player2ScoreLabel.ForeColor = System.Drawing.Color.Red;
             this.player2ScoreLabel.Location = new System.Drawing.Point(315, 781);
             this.player2ScoreLabel.Name = "player2ScoreLabel";
             this.player2ScoreLabel.Size = new System.Drawing.Size(127, 59);
@@ -70,7 +70,7 @@
             // 
             this.player1ScoreLabel.BackColor = System.Drawing.Color.Transparent;
             this.player1ScoreLabel.Font = new System.Drawing.Font("Microsoft YaHei UI", 12F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.player1ScoreLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(255)))));
+            this.player1ScoreLabel.ForeColor = System.Drawing.Color.DodgerBlue;
             this.player1ScoreLabel.Location = new System.Drawing.Point(12, 9);
             this.player1ScoreLabel.Name = "player1ScoreLabel";
             this.player1ScoreLabel.Size = new System.Drawing.Size(127, 59);
