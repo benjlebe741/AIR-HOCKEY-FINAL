@@ -164,15 +164,17 @@ namespace pong
             }
             #endregion
 
+            //For information not about the puck: (goal scoring and paddle positions)
             for (int i = 0; i < 2; i++)
             {
                 //update the objects previous locations
                 previousLocations[i] = movingObjects[i + 1].Location;
 
+                #region Goal Score Check
                 //Check to see if a goal has been scored.
                 if (movingObjects[0].IntersectsWith(ScoreZones[i]))
                 {
-
+                    //Play a sound
                     resetPositions.Play();
                     Refresh();
 
@@ -192,8 +194,10 @@ namespace pong
                     //If someone has scored a goal reset game object positions.
                     ResetPositions();
                 }
+                #endregion
             }
 
+            #region Determing All Object Directions
             //Determening all player directions depending on what keys are pressed: (for example: if 'Up' is down, and 'Down' is not, player2's vertical direction is -1, reverse those to get 1, and if both/neither are down, get a direction of 0.)
             for (int i = 0; i < determineDirectionsList.Length; i++)
             {
@@ -210,10 +214,12 @@ namespace pong
                     objectDirectionsXY[determineDirectionsList[i][2]] = 0;
                 }
             }
+            #endregion
 
             //COLISIONS! 
             for (int i = 0; i <= 2; i++)
             {
+                #region Update Object Positions
                 //UPDATE OBJECT POSITIONS
                 if (objectDirectionsXY[i] != canMoveUpDownLeftRight[i][3] && objectDirectionsXY[i] != canMoveUpDownLeftRight[i][2])
                 {
@@ -223,8 +229,9 @@ namespace pong
                 {
                     addValue(i, 0, Convert.ToInt32(objectDirectionsXY[i + 3] * objectSpeedsXY[i + 3]));
                 }
+                #endregion
 
-
+                #region Wall Colision Check Code
                 for (int j = 0; j <= 5; j++)
                 {
                     #region Revised Wall Check Code
@@ -306,6 +313,9 @@ namespace pong
                 //}
                 #endregion
 
+                #endregion
+
+                #region Paddle Colision Check Code
                 //OBJECTS INTERACTING WITH EACHOTHER; I wont use .Intersects with because these are circles;
                 //--instead I want to compare the position of the ball and the other circles by drawing a line between each circle and
                 //--looking at if it is smaller than the sum of their radius's. Math.Sprt((x1-x2)^2 + (y1-y2)^2) <= r1+r2
@@ -320,8 +330,9 @@ namespace pong
                         //if the equation includes an objects height
                         int includedHeight = (movingObjects[0].Width * ((CDL[j][2] - 1) * -1 / 2));
                         ColisionCheck(0, i, j, 99, CDL[j][2], (((movingObjects[i].X * CDL[j][0]) + (movingObjects[i].Y * CDL[j][1])) + includedHeight), yDifference, i, CDL[j][2] * -1, CDL[j][2], addValue, 2 * CDL[j][2], 0, 0);
-                        
+
                         #endregion
+
                         #region Second Paddle Check Code
                         ////if the equation includes an objects height
                         //int includedHeight = (movingObjects[0].Width * ((CDL[j][2] - 1) * -1 / 2));
@@ -401,11 +412,10 @@ namespace pong
                     //objectSpeedsXY[0 + 3] = objectSpeedsXY[0 + 3] / 2 + paddleVelocitiesXY[i + 2 - 1];
                     #endregion
                 }
+                #endregion
 
-
-
-
-
+                #region Up Down Left Right Reset
+                //Reset if an object can move up or down depending on if the puck is in contact with the paddles
                 if (GetLength(movingObjects[0], movingObjects[i]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[i].Width / 2)) || (i == 0 && GetLength(movingObjects[0], movingObjects[1]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[1].Width / 2)) && GetLength(movingObjects[0], movingObjects[2]) > Convert.ToDouble((movingObjects[0].Width / 2) + (movingObjects[2].Width / 2))))
                 {
                     canMoveUpDownLeftRight[i][0] = 0;
@@ -413,6 +423,7 @@ namespace pong
                     canMoveUpDownLeftRight[i][2] = 0;
                     canMoveUpDownLeftRight[i][3] = 0;
                 }
+                #endregion
             }
 
 
@@ -430,16 +441,30 @@ namespace pong
             e.Graphics.FillEllipse(whiteBrush, movingObjects[0]);
         }
 
+        #region Key Checks
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
+            //Check all keys and if they are down set the boolian value to true
             checkKey(true, e);
         }
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
+            //Check all keys and if they are up set the boolian value to false
             checkKey(false, e);
         }
 
+        void checkKey(bool trueOrFalse, KeyEventArgs e)
+        {
+            for (int i = 0; i < keysToCheck.Length; i++)
+            {
+                if (e.KeyCode == keysToCheck[i])
+                {
+                    WSADUpDownLeftRight[i] = trueOrFalse;
+                }
+            }
+        }
+        #endregion
 
         double GetLength(Rectangle rectangle1, Rectangle rectangle2)
         {
@@ -453,16 +478,7 @@ namespace pong
             double length = Math.Sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
             return length;
         }
-        void checkKey(bool trueOrFalse, KeyEventArgs e)
-        {
-            for (int i = 0; i < keysToCheck.Length; i++)
-            {
-                if (e.KeyCode == keysToCheck[i])
-                {
-                    WSADUpDownLeftRight[i] = trueOrFalse;
-                }
-            }
-        }
+       
 
         void ResetPositions()
         {
@@ -513,16 +529,20 @@ namespace pong
             movingObjects[i].Y += addPositionY;
         }
 
+        //Run based on the Colision Detections List for colisions with paddles and the wall.
         void ColisionCheck(int zeroOrI, int i, int j, int onlyAffectsI, int lesserOrGreater, int comparision, int yDifference, int onlyAffect, int changeDirection, int cannotMove_, Action<int, int, int> action, int affectPosition, int keepPositionX, int keepPositionY)
-        { 
+        {
+            //Detect if the objects X or Y location relative to the wall or paddle is the same (or beyond where it should be) 
             if (((movingObjects[zeroOrI].X * CDL[j][0]) + (movingObjects[zeroOrI].Y * CDL[j][1])) * lesserOrGreater <= (comparision) * lesserOrGreater && (onlyAffectsI == i || onlyAffectsI == 99))
-                {
-
+            {
+                //If so: affect the puck only in some ways (like changing its direction when it hits the wall); otherwise affect everything if 'onlyAffect' is equal to 'i'
                 if (i == onlyAffect)
                 {
+                    //Change the pucks direction, and the ability for the object to move in CDL's respective direction.
                     objectDirectionsXY[0 + yDifference] = changeDirection;
                     canMoveUpDownLeftRight[0][CDL[j][4]] = cannotMove_;
 
+                    //There are certain things that shouldnt happen if the colision is only about the puck
                     if (onlyAffect != 0)
                     {
                         canMoveUpDownLeftRight[i][j - colisionListDifference] = canMoveUpDownLeftRight[0][j - colisionListDifference];
